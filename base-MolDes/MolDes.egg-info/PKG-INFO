@@ -1,0 +1,19 @@
+Metadata-Version: 2.1
+Name: MolDes
+Version: 0.0.1
+Summary: MolDes python package
+Home-page: UNKNOWN
+Author: Yun-Wen Mao
+Author-email: <dmao1020@gmail.com>
+License: UNKNOWN
+Keywords: python,MolDes,Chemistry,Descriptor,low-dimensional
+Platform: UNKNOWN
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Education
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 3
+Classifier: Operating System :: MacOS :: MacOS X
+Classifier: Operating System :: Microsoft :: Windows
+
+MolDes python package to create descriptor based on Coulomb matrix (CM_util); Gershgorin circle theorem (GCT_util); and Graph convolution network (GCN_util)
+
