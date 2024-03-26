@@ -1,4 +1,4 @@
-# MolDes-GCT
+# MolDes-GCT: low dimensional molecular descriptor
 Welcome to MolDes, a powerful toolset for generating low-dimensional descriptors for molecular structures, based on the methodologies outlined in the paper titled "Eﬃcient interpolation of molecular properties across chemical compound space with low-dimensional descriptors" authored by Mao et al. [1] This repository provides a Python implementation of the techniques described in the paper, empowering users to efficiently create meaningful representations of molecular data.
 
 # Features
