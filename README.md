@@ -10,11 +10,12 @@ Welcome to MolDes, a powerful toolset for generating low-dimensional descriptors
 # Usage
 To utilize MolDes for molecular descriptor generation, users can follow these steps:
 
-1. Install the required dependencies specified in the "requirements.txt" file. For users Anaconda users, a .yml file is also provided.
-2. Follow the provided examples in the "Tutorial" folder or integrate MolDes into your workflow by importing the necessary modules.
-3. Utilize the provided functions to construct Coulomb matrices, analyze eigenvalue spectra, generate GNN embeddings, and create low-dimensional descriptors for your molecular datasets.
-4. Customize and extend the functionalities of MolDes to suit your specific research or application requirements.
-5. For users who are interested in testing the code with QM9 dataset, please visit https://figshare.com/collections/Quantum_chemistry_structures_and_properties_of_134_kilo_molecules/978904 and download the dataset. [2]
+1. Install the MolDes package either from GitHub or by using the pip command 'pip install MolDes'.
+2. Install the required dependencies specified in the "requirements.txt" file. For users Anaconda users, a .yml file is also provided.
+3. Follow the provided examples in the "Tutorial" folder or integrate MolDes into your workflow by importing the necessary modules.
+4. Utilize the provided functions to construct Coulomb matrices, analyze eigenvalue spectra, generate GNN embeddings, and create low-dimensional descriptors for your molecular datasets.
+5. Customize and extend the functionalities of MolDes to suit your specific research or application requirements.
+6. For users who are interested in testing the code with QM9 dataset, please visit https://figshare.com/collections/Quantum_chemistry_structures_and_properties_of_134_kilo_molecules/978904 and download the dataset. [2]
 
 # Reference
 If you found this code useful, please consider citing the following work:
