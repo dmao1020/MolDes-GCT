@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.0.1' 
+VERSION = '0.0.3' 
 DESCRIPTION = 'MolDes python package'
 LONG_DESCRIPTION = 'MolDes python package to create descriptor based on Coulomb matrix (CM_util); Gershgorin circle theorem (GCT_util); and Graph convolution network (GCN_util)'
 
