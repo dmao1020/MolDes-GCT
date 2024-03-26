@@ -1,2 +1,2 @@
-from GCT_util import GCT_util
-from CM_util import CM_util
+from MolDes import GCT_util
+from MolDes import CM_util

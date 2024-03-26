@@ -16,6 +16,24 @@ from rdkit.Chem.Scaffolds import MurckoScaffold
 from IPython.display import display
 from rdkit.Chem.Draw import rdMolDraw2D
 from rdkit.Chem import MolFromSmiles
+from MolDes import CM_util
+
+element_dict = {"Co" : 27,
+                "Si" : 14,
+                "O" : 8,
+                "H" : 1,
+                "F" : 9,
+                "C" : 6,
+                "Cu" : 29,
+                "N" : 7,
+                "P" : 15,
+                "S" : 16,
+                "Cl" : 17,
+                "Zr" : 40,
+                "Ti" : 22,
+                "Sn" : 50,
+                "Na" : 11,
+                "Pt" : 78}
 
 class read_qm9_xyz_files:
     def __init__(self, args, H_remove = True):
@@ -102,13 +120,23 @@ class read_qm9_xyz_files:
             return inchi0, gdb_line
 
 class GCT_util:
-    def __init__(self, args, x = np.linspace(-300, 300, 100), cum_pdf_norm_stat = True, var_power = 1, Aij_power = 1):
-        self.args = args
+    def __init__(self, atom_ls = ["H", "C", "N", "O", "F"], atom_var = 10, atom_var_power = 2, d_atom = 10, 
+                 x = np.linspace(-300, 300, 100), cum_pdf_norm_stat = True, var_power = 1, di = 1):
+        # self.args = args
+        # variables related to the molecule PDF
         self.x = x # the list of input value x for f(x), where f(x) is the gershgorin circle PDF
         self.cum_pdf_norm_stat = cum_pdf_norm_stat # weather the CDF is normalized
         self.var_power = var_power # The power value tau on the standard deviation of f_i
-        self.Aij_power = Aij_power # The power value on Mij
-    
+        self.di = di
+        
+        # variables related to the atom PDF
+        self.atom_ls = atom_ls
+        self.atom_var = atom_var
+        self.atom_var_power = atom_var_power
+        self.d_atom = d_atom
+        
+        #self.Aij_power = Aij_power # The power value on Mij
+        
     ### nomralized probability density function (PDF) ###
     def normalPdf(self, mean, variance):
         x = self.x
@@ -120,41 +148,152 @@ class GCT_util:
         pdf = normalPdf(x, mean, variance)
         return np.cumsum(pdf)/np.sum(pdf)
     
-    def mu_var_ls(CM_arr):
-    count = 0
-    mu_var_ls = []
-    for i in range(np.shape(CM_arr)[0]):
-        #print (i)
-        count +=1
-        row_i = CM_arr[i,:]
-        Aii = row_i[i]
-        #print (Aii)
-        sum_Aij = np.sum(row_i)-Aii
-        mu_var_ls.append([Aii, np.abs(sum_Aij)])
-        #print (sum_Aij)
-    return count, np.array(mu_var_ls)
+    def mu_var_ls(self, CM_arr):
+        count = 0
+        mu_var_ls = []
+        # print (CM_arr)
+        for i in range(np.shape(CM_arr)[0]):
+            #print (i)
+            count +=1
+            row_i = CM_arr[i,:]
+            Aii = row_i[i]
+            #print (Aii)
+            sum_Aij = np.sum(row_i)-Aii
+            mu_var_ls.append([Aii, np.abs(sum_Aij)])
+            #print (sum_Aij)
+        return count, np.array(mu_var_ls)
     
-    ### nomralized cumulative distribution function (CDF) ###
-    def smi_to_cum_pdf_calc(self, smi):
+    ### nomralized cumulative distribution function (CDF) from SMILES ###
+    def smi2cum_pdf_calc(self, xyz_dir, smi):
         cum_pdf_norm_stat_ = self.cum_pdf_norm_stat
         if cum_pdf_norm_stat_ == True:
             cum_pdf_norm_stat = 0
         else:
             cum_pdf_norm_stat = 1
         var_power = self.var_power
-        Aij_power = self.Aij_power
+        #Aij_power = self.Aij_power
         x = self.x
-        CM = np.array(create_CM(smi))
+        di = self.di
+        CM = np.array(CM_util.create_CM_from_smi(xyz_dir, smi))
         count, mu_var_arr = self.mu_var_ls(CM)
         d = 1/count
 
-        cum_pdf = (d/d**cum_pdf_norm_stat)*normalPdf(x, mu_var_arr[0,0], mu_var_arr[0,1])#**2)
-        sq_cum_pdf = (d/d**cum_pdf_norm_stat)*normalPdf(x, mu_var_arr[0,0], mu_var_arr[0,1]**var_power)
+        cum_pdf = di*(d/d**cum_pdf_norm_stat)*self.normalPdf(mu_var_arr[0,0], mu_var_arr[0,1]**var_power)
         for pdf_i in range(len(mu_var_arr)-1):
             mu_i, var_i = mu_var_arr[pdf_i+1,:]
-            cum_pdf += (d/d**cum_pdf_norm_stat)*normalPdf(x, mu_i, var_i)#**2)
-            sq_cum_pdf += (d/d**cum_pdf_norm_stat)*normalPdf(x, mu_i, var_i**var_power)
-        return cum_pdf, sq_cum_pdf
+            cum_pdf += di*(d/d**cum_pdf_norm_stat)*self.normalPdf(mu_i, var_i**var_power)
+        return cum_pdf
+    def smi2auc_calc(self, xyz_dir, smi, dx = 1):
+        cum_pdf_norm_stat_ = self.cum_pdf_norm_stat
+        if cum_pdf_norm_stat_ == True:
+            cum_pdf_norm_stat = 0
+        else:
+            cum_pdf_norm_stat = 1
+        var_power = self.var_power
+        #Aij_power = self.Aij_power
+        x = self.x
+        di = self.di
+        
+        CM_arr = np.array(CM_util.create_CM_from_smi(xyz_dir, smi))
+        count, mu_var_arr = self.mu_var_ls(CM_arr)
+        
+        d = 1/count
+
+        cum_pdf = di*(d/d**cum_pdf_norm_stat)*self.normalPdf(mu_var_arr[0,0], mu_var_arr[0,1]**var_power)
+        for pdf_i in range(len(mu_var_arr)-1):
+            mu_i, var_i = mu_var_arr[pdf_i+1,:]
+            cum_pdf += di*(d/d**cum_pdf_norm_stat)*self.normalPdf(mu_i, var_i**var_power)
+
+        auc = np.trapz(cum_pdf, dx=dx)
+        return auc
+
+    ### nomralized cumulative distribution function (CDF) from CM###
+    def CM2cum_pdf_calc(self, xyz_dir, CM):
+        cum_pdf_norm_stat_ = self.cum_pdf_norm_stat
+        if cum_pdf_norm_stat_ == True:
+            cum_pdf_norm_stat = 0
+        else:
+            cum_pdf_norm_stat = 1
+        var_power = self.var_power
+        #Aij_power = self.Aij_power
+        x = self.x
+        di = self.di
+        CM_arr = np.array(CM)
+        
+        count, mu_var_arr = self.mu_var_ls(CM_arr)
+        d = 1/count
+
+        cum_pdf = di*(d/d**cum_pdf_norm_stat)*self.normalPdf(mu_var_arr[0,0], mu_var_arr[0,1]**var_power)
+        for pdf_i in range(len(mu_var_arr)-1):
+            mu_i, var_i = mu_var_arr[pdf_i+1,:]
+            cum_pdf += di*(d/d**cum_pdf_norm_stat)*self.normalPdf(mu_i, var_i**var_power)
+        return cum_pdf
+        
+    def CM2auc_calc(self, xyz_dir, CM, dx = 1):
+        cum_pdf_norm_stat_ = self.cum_pdf_norm_stat
+        if cum_pdf_norm_stat_ == True:
+            cum_pdf_norm_stat = 0
+        else:
+            cum_pdf_norm_stat = 1
+        var_power = self.var_power
+        #Aij_power = self.Aij_power
+        x = self.x
+        di = self.di
+        
+        CM_arr = np.array(CM)
+        count, mu_var_arr = self.mu_var_ls(CM_arr)
+        
+        d = 1/count
+
+        cum_pdf = di*(d/d**cum_pdf_norm_stat)*self.normalPdf(mu_var_arr[0,0], mu_var_arr[0,1]**var_power)
+        for pdf_i in range(len(mu_var_arr)-1):
+            mu_i, var_i = mu_var_arr[pdf_i+1,:]
+            cum_pdf += di*(d/d**cum_pdf_norm_stat)*self.normalPdf(mu_i, var_i**var_power)
+
+        auc = np.trapz(cum_pdf, dx=dx)
+        return auc
+    ### f_atom calculation ###    
+    def Mii_calc(self, Z):
+        return 0.5*Z**(2.4)
+    def f_atom_calc(self):
+        atom_ls = self.atom_ls
+        atom_var = self.atom_var
+        atom_var_power = self.atom_var_power
+        d_atom = self.d_atom
+        f_atom_dict = {}
+        for idx, atom_i in enumerate(atom_ls):
+            Z_i = element_dict[atom_i]
+            f_atom_dict[atom_i] = d_atom * self.normalPdf(self.Mii_calc(Z_i), atom_var**atom_var_power)
+        return f_atom_dict
+
+    def smi2atom_pdf_calc(self, xyz_dir, smi):
+        cum_pdf_norm_stat_ = self.cum_pdf_norm_stat
+        if cum_pdf_norm_stat_ == True:
+            cum_pdf_norm_stat = 0
+        else:
+            cum_pdf_norm_stat = 1
+        var_power = self.var_power
+        #Aij_power = self.Aij_power
+        x = self.x
+        di = self.di
+        CM = np.array(CM_util.create_CM_from_smi(xyz_dir, smi))
+        count, mu_var_arr = self.mu_var_ls(CM)
+        d = 1/count # normalization constant
+
+        cum_pdf = di*(d/d**cum_pdf_norm_stat)*self.normalPdf(mu_var_arr[0,0], mu_var_arr[0,1]**var_power)
+        for pdf_i in range(len(mu_var_arr)-1):
+            mu_i, var_i = mu_var_arr[pdf_i+1,:]
+            cum_pdf += di*(d/d**cum_pdf_norm_stat)*self.normalPdf(mu_i, var_i**var_power)
+        atom_dict = self.f_atom_calc()
+        atom_ls = self.atom_ls
+        f_atom_mol = []
+        for idx, atom_i in enumerate(atom_ls):
+            f_atom_mol.append(np.inner(atom_dict[atom_i], cum_pdf)) 
+        
+        return f_atom_mol
+
+
+    
     def cum_pdf_auc():
         auc_ls = []
         for i in progressbar(range(len(smi_ls)), "Computing: ", 40):
@@ -183,19 +322,4 @@ class GCT_util:
             #auc_ls.append(auc(x,cum_pdf))
             auc_ls.append([auc_1_i, auc_5_i, w])
         return np.array(auc_ls)
-    def auc_calc(smi, cum_pdf_norm_stat):
-        smi_CM_arr = np.array(create_CM(smi))
-        count, mu_var_arr = mu_var_ls(smi_CM_arr)
-
-
-        x = np.linspace(-300, 300, 100)
-        d = 1/count
-
-        cum_pdf = (d/d**cum_pdf_norm_stat)*normalPdf(x, mu_var_arr[0,0], mu_var_arr[0,1]**2)
-        for pdf_i in range(len(mu_var_arr)-1):
-            mu_i, var_i = mu_var_arr[pdf_i+1,:]
-            cum_pdf += (d/d**cum_pdf_norm_stat)*normalPdf(x, mu_i, var_i**2)
-
-        auc_1_i = np.trapz(cum_pdf, dx=1)
-        auc_5_i = np.trapz(cum_pdf, dx=5)
-        return auc_1_i ,auc_5_i
+    
